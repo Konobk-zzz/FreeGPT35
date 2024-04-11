@@ -4,10 +4,16 @@ const axios = require("axios");
 const https = require("https");
 const { randomUUID } = require("crypto");
 
+// Environment Variables
+const proxySchema = process.env.PROXY_SCHEMA ? process.env.PROXY_SCHEMA : "http"; // http or https
+const proxyHost = process.env.PROXY_HOST;
+const proxyPort = process.env.PROXY_PORT;
+
 // Constants for the server and API configuration
+const useProxy = proxyHost && proxyPort ? true : false;
 const port = 3040;
 const baseUrl = "https://chat.openai.com";
-const apiUrl = `${baseUrl}/backend-api/conversation`;
+const apiUrl = `${baseUrl}/backend-anon/conversation`;
 const refreshInterval = 60000; // Interval to refresh token in ms
 const errorWait = 120000; // Wait time in ms after an error
 
@@ -59,7 +65,7 @@ async function* StreamCompletion(data) {
 }
 
 // Setup axios instance for API requests with predefined configurations
-const axiosInstance = axios.create({
+const baseConf = {
   httpsAgent: new https.Agent({ rejectUnauthorized: false }),
   headers: {
     accept: "*/*",
@@ -80,7 +86,16 @@ const axiosInstance = axios.create({
     "user-agent":
       "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/123.0.0.0 Safari/537.36",
   },
-});
+}
+if (useProxy) {
+  // 添加代理字段
+  baseConf.proxy = {
+    protocol: proxySchema,
+    host: proxyHost,
+    port: proxyPort
+  };
+}
+const axiosInstance = axios.create(baseConf);
 
 // Function to get a new session ID and token from the OpenAI API
 async function getNewSessionId() {
@@ -131,7 +146,7 @@ async function handleChatCompletion(req, res) {
         content: { content_type: "text", parts: [message.content] },
       })),
       parent_message_id: randomUUID(),
-      model: "text-davinci-002-render-sha",
+      model: req.body.model,
       timezone_offset_min: -180,
       suggestions: [],
       history_and_training_disabled: true,

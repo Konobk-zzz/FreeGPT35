@@ -14,6 +14,12 @@ Utilize the unlimited free **GPT-3.5-Turbo** API service provided by the login-f
 - Recommended to use US home broadband IP, you are very likely to succeed. 推荐使用美国家宽IP，你很大可能可以成功。
 - Don't share and abuse your API. 不要共享和滥用你的 API。
 
+## Use Proxy
+Proxy configured through environment variables. Like this:
+```bash
+export PROXY_SCHEMA=http PROXY_HOST=127.0.0.1 PROXY_PORT=7890
+```
+
 ## Deploy
 ### Node
 
