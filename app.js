@@ -2,6 +2,7 @@ const express = require("express");
 const bodyParser = require("body-parser");
 const axios = require("axios");
 const https = require("https");
+const { HttpProxyAgent, HttpsProxyAgent } = require('hpagent');
 const { randomUUID } = require("crypto");
 
 // Environment Variables
@@ -11,6 +12,7 @@ const proxyPort = process.env.PROXY_PORT;
 
 // Constants for the server and API configuration
 const useProxy = proxyHost && proxyPort ? true : false;
+const proxyAddress = `${proxySchema}://${proxyHost}:${proxyPort}`
 const port = 3040;
 const baseUrl = "https://chat.openai.com";
 const apiUrl = `${baseUrl}/backend-anon/conversation`;
@@ -88,12 +90,12 @@ const baseConf = {
   },
 }
 if (useProxy) {
-  // 添加代理字段
-  baseConf.proxy = {
-    protocol: proxySchema,
-    host: proxyHost,
-    port: proxyPort
-  };
+  baseConf.httpAgent = new HttpProxyAgent({
+    proxy: proxyAddress
+  });
+  baseConf.httpsAgent = new HttpsProxyAgent({
+    proxy: proxyAddress
+  });
 }
 const axiosInstance = axios.create(baseConf);
 
@@ -300,6 +302,9 @@ app.use((req, res) =>
 // Start the server and the session ID refresh loop
 app.listen(port, () => {
   console.log(`💡 Server is running at http://localhost:${port}`);
+  if (useProxy) {
+    console.log(`💡 Using Proxy: ${proxyAddress}`)
+  }
   console.log();
   console.log(`🔗 Base URL: http://localhost:${port}/v1`);
   console.log(
